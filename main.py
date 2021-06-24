@@ -10,6 +10,12 @@ class Config:
     commands = {
         "gimme": ["gimme"],
         "in_moass": ["are we in the moass", "is the moass happening now"],
+        "kirby_god": [
+            "ask kirby:",
+            "ask god:",
+            "demande à kirby :",
+            "demande à dieu :",
+        ],
     }
 
 
@@ -22,10 +28,10 @@ class Client(discord.Client):
             return
 
         if message.content.startswith(config.main_command):
-            text = message.content.split(config.main_command)[1].strip().lower()
+            text = message.content.split(config.main_command)[1].strip()
 
             # Command: gimme
-            if any([text.startswith(c) for c in config.commands["gimme"]]):
+            if any([text.lower().startswith(c) for c in config.commands["gimme"]]):
                 data = text.split()[1].strip().split(None, 1)
                 ticker_symbol = data[0]
 
@@ -39,13 +45,18 @@ class Client(discord.Client):
                 response = f"{last_price}$"
 
             # Command: in_moass
-            elif any([c in text for c in config.commands["in_moass"]]):
+            elif any([c in text.lower() for c in config.commands["in_moass"]]):
                 ticker = stock_utils.get_ticker("GME")
                 last_price = stock_utils.get_last_price(ticker)
                 if last_price >= 10000:
                     response = f"Yes!"
                 else:
                     response = f"No."
+
+            # Command: kirby_god
+            elif any([c in text.lower() for c in config.commands["kirby_god"]]):
+                kirby_question = text.split(":", 1)[1].strip()
+                response = f"Kirby god: {kirby_question}"
 
             else:
                 response = "Ook, ook ook."
