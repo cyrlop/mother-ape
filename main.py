@@ -12,7 +12,7 @@ config = Config()
 
 class Client(discord.Client):
     async def on_ready(self):
-        print("Logged on as {0}!".format(self.user))
+        print(f"Discord client started and logged on as {self.user}!")
 
     async def on_message(self, message):
         if message.author == self.user:
