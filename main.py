@@ -1,13 +1,12 @@
 import os
 import discord
 
+import stock_utils
+
 
 class Config:
     command = "Hey Mother, "
     discord_bot_token = os.environ.get("DISCORD_BOT_TOKEN")
-
-
-config = Config()
 
 
 class Client(discord.Client):
@@ -18,9 +17,26 @@ class Client(discord.Client):
         if message.author == self.user:
             return
 
-        data = message.content
-        if data.startswith(config.command):
-            await message.channel.send("Ook, ook ook.")
+        if message.content.startswith(config.command):
+            text = message.content.split(config.command)[1].strip()
+
+            if text.startswith("gimme"):
+                data = text.split("gimme")[1].strip().split(None, 1)
+                ticker_symbol = data[0]
+
+                if len(data) > 1:
+                    params = data[1]
+                    print(params)
+                    # TODO: implement different outputs depending on params
+
+                ticker = stock_utils.get_ticker(ticker_symbol)
+                last_price = stock_utils.get_last_price(ticker)
+                response = f"{last_price}$"
+
+            else:
+                response = "Ook, ook ook."
+
+            await message.channel.send(response)
 
 
 def get_intents():
@@ -33,5 +49,6 @@ def get_intents():
     return intents
 
 
+config = Config()
 client = Client(intents=get_intents())
 client.run(config.discord_bot_token)
