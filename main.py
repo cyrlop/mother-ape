@@ -5,8 +5,12 @@ import stock_utils
 
 
 class Config:
-    main_command = "Hey Mother, "
     discord_bot_token = os.environ.get("DISCORD_BOT_TOKEN")
+    main_command = "Hey Mother, "
+    commands = {
+        "gimme": ["gimme"],
+        "in_moass": ["are we in the moass", "is the moass happening now"],
+    }
 
 
 class Client(discord.Client):
@@ -18,10 +22,11 @@ class Client(discord.Client):
             return
 
         if message.content.startswith(config.main_command):
-            text = message.content.split(config.main_command)[1].strip()
+            text = message.content.split(config.main_command)[1].strip().lower()
 
-            if text.startswith("gimme"):
-                data = text.split("gimme")[1].strip().split(None, 1)
+            # Command: gimme
+            if any([text.startswith(c) for c in config.commands["gimme"]]):
+                data = text.split()[1].strip().split(None, 1)
                 ticker_symbol = data[0]
 
                 if len(data) > 1:
@@ -32,6 +37,15 @@ class Client(discord.Client):
                 ticker = stock_utils.get_ticker(ticker_symbol)
                 last_price = stock_utils.get_last_price(ticker)
                 response = f"{last_price}$"
+
+            # Command: in_moass
+            elif any([c in text for c in config.commands["in_moass"]]):
+                ticker = stock_utils.get_ticker("GME")
+                last_price = stock_utils.get_last_price(ticker)
+                if last_price >= 10000:
+                    response = f"Yes!"
+                else:
+                    response = f"No."
 
             else:
                 response = "Ook, ook ook."
