@@ -5,7 +5,7 @@ import stock_utils
 
 
 class Config:
-    command = "Hey Mother, "
+    main_command = "Hey Mother, "
     discord_bot_token = os.environ.get("DISCORD_BOT_TOKEN")
 
 
@@ -17,8 +17,8 @@ class Client(discord.Client):
         if message.author == self.user:
             return
 
-        if message.content.startswith(config.command):
-            text = message.content.split(config.command)[1].strip()
+        if message.content.startswith(config.main_command):
+            text = message.content.split(config.main_command)[1].strip()
 
             if text.startswith("gimme"):
                 data = text.split("gimme")[1].strip().split(None, 1)
