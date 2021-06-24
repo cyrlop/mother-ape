@@ -28,7 +28,7 @@ class Client(discord.Client):
             return
 
         if message.content.startswith(config.main_command):
-            text = message.content.split(config.main_command)[1].strip()
+            text = message.content.split(config.main_command, 1)[1].strip()
 
             # Command: gimme
             if any([text.lower().startswith(c) for c in config.commands["gimme"]]):
