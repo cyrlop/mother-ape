@@ -30,19 +30,47 @@ class Client(discord.Client):
         if message.content.startswith(config.main_command):
             text = message.content.split(config.main_command, 1)[1].strip()
 
-            # Command: gimme
+            # Command: gimme --> Stonk data
             if any([text.lower().startswith(c) for c in config.commands["gimme"]]):
-                data = text.split()[1].strip().split(None, 1)
+                data = text.split(None, 1)[1].strip().split(None, 1)
                 ticker_symbol = data[0]
 
                 if len(data) > 1:
-                    params = data[1]
-                    print(params)
-                    # TODO: implement different outputs depending on params
+                    params = data[1].split()
+                else:
+                    params = ["regularMarketPrice", "dayLow", "dayHigh"]
 
+                # Get data
                 ticker = stock_utils.get_ticker(ticker_symbol)
-                last_price = stock_utils.get_last_price(ticker)
-                response = f"{last_price}$"
+
+                if len(ticker.info) < 2:
+                    response = "Ticker symbol not found"
+                    await message.channel.send(response)
+                    return
+
+                # Build embed response
+                title = f"{ticker.info['symbol']}"
+                if ticker.info.get("shortName") is not None:
+                    title += f" - {ticker.info['shortName']}"
+
+                embed = discord.Embed(title=title, color=0x26C0EB)
+
+                if ticker.info.get("website") is not None:
+                    embed.url = ticker.info["website"]
+
+                if ticker.info.get("logo_url") is not None:
+                    embed.set_image(url=ticker.info["logo_url"])
+
+                for param in params:
+                    if ticker.info.get(param) is not None:
+                        embed.add_field(
+                            name=stock_utils.camel_to_sentence(param),
+                            value=ticker.info.get(param, "Not found"),
+                            inline=True,
+                        )
+
+                await message.channel.send(embed=embed)
+                return
 
             # Command: in_moass
             elif any([c in text.lower() for c in config.commands["in_moass"]]):
