@@ -2,6 +2,7 @@ import os
 import discord
 
 import stock_utils
+import reddit_utils
 
 
 class Config:
@@ -15,6 +16,9 @@ class Config:
             "ask god:",
             "demande à kirby :",
             "demande à dieu :",
+        ],
+        "superstonk": [
+            "latest dd",
         ],
     }
 
@@ -85,6 +89,39 @@ class Client(discord.Client):
             elif any([c in text.lower() for c in config.commands["kirby_god"]]):
                 kirby_question = text.split(":", 1)[1].strip()
                 response = f"Kirby god: {kirby_question}"
+
+            # Command: superstonk
+            elif any([c in text.lower() for c in config.commands["superstonk"]]):
+                try:
+
+                    sub = "Superstonk"
+                    flair = "DD 👨‍🔬"
+                    latest_posts = reddit_utils.get_latest_posts_by_flair(
+                        sub=sub, flair=flair, limit=10
+                    )
+                    embed = discord.Embed(
+                        title=f"Latest >>> {flair} <<< on r/{sub}", color=0xB01010
+                    )
+                    embed.url = f"https://www.reddit.com/r/{sub}"
+
+                    for post in latest_posts:
+                        title = (
+                            post["data"]["title"]
+                            if len(post["data"]["title"]) < 200
+                            else post["data"]["title"][:200] + " [...]"
+                        )
+                        embed.add_field(
+                            name=title,
+                            value=f"[Link to post]({post['data']['url']})",
+                            inline=False,
+                        )
+
+                    await message.channel.send(embed=embed)
+                    return
+
+                except Exception as e:
+                    await message.channel.send(f"```{e}```")
+                    return
 
             else:
                 response = "Ook, ook ook."
