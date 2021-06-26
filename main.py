@@ -8,19 +8,17 @@ import reddit_utils
 class Config:
     discord_bot_token = os.environ.get("DISCORD_BOT_TOKEN")
     main_command = "Hey Mother, "
-    commands = {
-        "gimme": ["gimme"],
-        "in_moass": ["are we in the moass", "is the moass happening now"],
-        "kirby_god": [
-            "ask kirby:",
-            "ask god:",
-            "demande à kirby :",
-            "demande à dieu :",
-        ],
-        "superstonk": [
-            "latest dd",
-        ],
+
+    commands_starts = {
+        "gimme": "gimme",
+        "are we in the moass": "in_moass",
+        "is the moass happening now": "in_moass",
+        "ask kirby:": "kirby_god",
+        "ask god:": "kirby_god",
+        "latest dd": "superstonk",
     }
+
+    static_answers = {None: "Ook, ook ook."}
 
 
 class Client(discord.Client):
@@ -34,9 +32,24 @@ class Client(discord.Client):
         if message.content.startswith(config.main_command):
             text = message.content.split(config.main_command, 1)[1].strip()
 
+            for command_start in config.commands_starts:
+                if text.lower().startswith(command_start):
+                    command = config.commands_starts[command_start]
+                    text_command = command_start
+                    text_rest = text[len(command_start) :].strip()
+                    break
+            else:
+                command = None
+
+            # Command: one to one hard coded answers
+            if command in config.static_answers:
+                response = config.static_answers[command]
+                await message.channel.send(response)
+                return
+
             # Command: gimme --> Stonk data
-            if any([text.lower().startswith(c) for c in config.commands["gimme"]]):
-                data = text.split(None, 1)[1].strip().split(None, 1)
+            elif command == "gimme":
+                data = text_rest.split(None, 1)
                 ticker_symbol = data[0]
 
                 if len(data) > 1:
@@ -77,25 +90,31 @@ class Client(discord.Client):
                 return
 
             # Command: in_moass
-            elif any([c in text.lower() for c in config.commands["in_moass"]]):
+            elif command == "in_moass":
                 ticker = stock_utils.get_ticker("GME")
                 last_price = stock_utils.get_last_price(ticker)
                 if last_price >= 10000:
                     response = f"Yes!"
                 else:
                     response = f"No."
+                await message.channel.send(response)
+                return
 
             # Command: kirby_god
-            elif any([c in text.lower() for c in config.commands["kirby_god"]]):
-                kirby_question = text.split(":", 1)[1].strip()
+            elif command == "kirby_god":
+                kirby_question = text_rest.split(":", 1)[1].strip()
                 response = f"Kirby god: {kirby_question}"
+                await message.channel.send(response)
+                return
 
             # Command: superstonk
-            elif any([c in text.lower() for c in config.commands["superstonk"]]):
+            elif command == "superstonk":
                 try:
-
                     sub = "Superstonk"
-                    flair = "DD 👨‍🔬"
+                    if text_command == "latest dd":
+                        flair = "DD 👨‍🔬"
+                    else:
+                        flair = "DD 👨‍🔬"
                     latest_posts = reddit_utils.get_latest_posts_by_flair(
                         sub=sub, flair=flair, limit=10
                     )
@@ -116,11 +135,6 @@ class Client(discord.Client):
                 except Exception as e:
                     await message.channel.send(f"```{e}```")
                     return
-
-            else:
-                response = "Ook, ook ook."
-
-            await message.channel.send(response)
 
 
 def get_intents():
