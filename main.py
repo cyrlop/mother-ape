@@ -100,21 +100,15 @@ class Client(discord.Client):
                         sub=sub, flair=flair, limit=10
                     )
                     embed = discord.Embed(
-                        title=f"Latest >>> {flair} <<< on r/{sub}", color=0xB01010
+                        title=f"Latest {flair} on r/{sub}", color=0xB01010
                     )
                     embed.url = f"https://www.reddit.com/r/{sub}"
 
                     for post in latest_posts:
-                        title = (
-                            post["data"]["title"]
-                            if len(post["data"]["title"]) < 200
-                            else post["data"]["title"][:200] + " [...]"
+                        embed_data = reddit_utils.get_post_embed_field_data(
+                            post["data"]
                         )
-                        embed.add_field(
-                            name=title,
-                            value=f"[Link to post]({post['data']['url']})",
-                            inline=False,
-                        )
+                        embed.add_field(**embed_data)
 
                     await message.channel.send(embed=embed)
                     return
