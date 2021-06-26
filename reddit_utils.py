@@ -35,9 +35,16 @@ def get_post_embed_field_data(post_data):
 
     value = (
         f"[Link to post]({post_data['url']})"
-        f" {post_data['score']} ({post_data['upvote_ratio']*100}% upvoted)"
         f" by u/{post_data['author']}"
         f" on {date}"
+        f"\n{post_data['score']} ({post_data['upvote_ratio']*100}% upvoted)"
     )
+
+    if len(post_data["all_awardings"]) > 0:
+        awards_count = 0
+        for award in post_data["all_awardings"]:
+            awards_count += award["count"]
+
+        value += f" / 🏆 {awards_count} award(s)"
 
     return {"name": name, "value": value, "inline": False}
