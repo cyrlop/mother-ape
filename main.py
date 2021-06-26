@@ -109,8 +109,7 @@ class Client(discord.Client):
 
         # COMMAND: kirby_god
         elif command == "kirby_god":
-            kirby_question = text_rest.split(":", 1)[1].strip()
-            response = f"Kirby god: {kirby_question}"
+            response = f"Kirby god: {text_rest}"
             await message.channel.send(response)
             return
 
