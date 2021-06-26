@@ -7,12 +7,49 @@ import reddit_utils
 
 class Config:
     discord_bot_token = os.environ.get("DISCORD_BOT_TOKEN")
-    main_commands = ["Hey Mother, ", "!mum"]
+    main_commands = ["Hey Mother,", "!mum"]
+
+    commands = {
+        "help": {
+            "description": "Invoke this help.",
+            "usage": "Hey Mother, help",
+            "examples": [],
+        },
+        "gimme": {
+            "description": (
+                "Gives data about a stonk. "
+                "You can specify as many Yahoo finance API fields as you want."
+            ),
+            "usage": "Hey Mother, gimme <TICKER> <FIELDS:optional>",
+            "examples": [
+                "Hey Mother, gimme GME",
+                "Hey Mother, gimme GME dayLow dayHigh",
+            ],
+        },
+        "in_moass": {
+            "description": "Ask Mother ape if we are in the MOASS.",
+            "usage": "Hey Mother, are we in the MOASS?",
+            "examples": [],
+        },
+        "kirby_god": {
+            "description": "Ask something the the Kirby god.",
+            "usage": "Hey Mother, ask Kirby: <QUESTION>",
+            "examples": ["Hey Mother, ask Kirby: Do you like trains?"],
+        },
+        "superstonk": {
+            "description": "Gather r/Superstonk data",
+            "usage": "Hey Mother, <SORTING> <CATEGORY>",
+            "examples": ["Hey Mother, latest DD"],
+        },
+    }
 
     commands_starts = {
+        "help": "help",
         "gimme": "gimme",
+        "in_moass": "in_moass",
         "are we in the moass": "in_moass",
         "is the moass happening now": "in_moass",
+        "kirby_god": "kirby_god",
         "ask kirby:": "kirby_god",
         "ask god:": "kirby_god",
         "latest dd": "superstonk",
@@ -33,7 +70,7 @@ class Client(discord.Client):
         # Don't respond if not called by a main_command
         for main_command in config.main_commands:
             if message.content.startswith(main_command):
-                text = message.content[len(main_command):].strip()
+                text = message.content[len(main_command) :].strip()
                 break
         else:
             return
@@ -52,6 +89,42 @@ class Client(discord.Client):
         if command in config.static_answers:
             response = config.static_answers[command]
             await message.channel.send(response)
+            return
+
+        # COMMAND: help
+        elif command == "help":
+            embed = discord.Embed(title="Ape mother - Help", color=0x26C0EB)
+
+            commands_md_joined = " / ".join([f"`{c}`" for c in config.main_commands])
+            embed.add_field(
+                name="How to invoke the Mother ape?",
+                value=f"Use one of the following commands: {commands_md_joined} followed by a proper trigger and parameters",
+                inline=True,
+            )
+
+            for command, command_dict in config.commands.items():
+                commands_starts = [
+                    k for k, v in config.commands_starts.items() if v == command
+                ]
+
+                value = command_dict["description"]
+                value += "\nCan be triggered by the following:"
+                for command_start in commands_starts:
+                    value += f"\n - `{command_start}`"
+
+                value += f"\nUsage: `{command_dict['usage']}`"
+
+                if len(command_dict["examples"]) > 0:
+                    value += "\nExamples:"
+                    for example in command_dict["examples"]:
+                        value += f"\n - `{example}`"
+
+                embed.add_field(
+                    name=f"🚩 {command}",
+                    value=value,
+                    inline=False,
+                )
+            await message.channel.send(embed=embed)
             return
 
         # COMMAND: gimme --> Stonk data
