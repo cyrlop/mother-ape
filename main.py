@@ -2,7 +2,6 @@ import os
 import discord
 import asyncio
 
-
 import stock_utils
 import reddit_utils
 
@@ -59,13 +58,21 @@ class Config:
 
     static_answers = {None: "Ook, ook ook."}
 
+    def set_initial_names(self, client):
+        # Store initial bot nickname for each guild
+        self.initial_names = {
+            guild: guild.get_member(client.user.id).display_name
+            for guild in client.guilds
+        }
+
 
 class Client(discord.Client):
+    def __init__(self, *args, **kw):
+        super().__init__(*args, **kw)
+        self.config = Config()
+
     async def on_ready(self):
-        # Store initial bot nickname for each guild
-        config.initial_names = {
-            guild: guild.get_member(self.user.id).display_name for guild in self.guilds
-        }
+        self.config.set_initial_names(self)
         self.loop.create_task(self.update_gme_ticker(sec=10))
         print(f"Discord client started and logged on as {self.user}!")
 
@@ -75,7 +82,9 @@ class Client(discord.Client):
             last_price = stock_utils.get_last_price(ticker)
             for guild in self.guilds:
                 member = guild.get_member(self.user.id)
-                await member.edit(nick=f"{last_price}$ - {config.initial_names[guild]}")
+                await member.edit(
+                    nick=f"{last_price}$ - {self.config.initial_names[guild]}"
+                )
             await asyncio.sleep(sec)
 
     async def on_message(self, message):
@@ -84,7 +93,7 @@ class Client(discord.Client):
             return
 
         # Don't respond if not called by a main_command
-        for main_command in config.main_commands:
+        for main_command in self.config.main_commands:
             if message.content.startswith(main_command):
                 text = message.content[len(main_command) :].strip()
                 break
@@ -92,9 +101,9 @@ class Client(discord.Client):
             return
 
         # Parse text to find command
-        for command_start in config.commands_starts:
+        for command_start in self.config.commands_starts:
             if text.lower().startswith(command_start):
-                command = config.commands_starts[command_start]
+                command = self.config.commands_starts[command_start]
                 text_command = command_start
                 text_rest = text[len(command_start) :].strip()
                 break
@@ -102,8 +111,8 @@ class Client(discord.Client):
             command = None
 
         # COMMAND: one to one hard coded answers
-        if command in config.static_answers:
-            response = config.static_answers[command]
+        if command in self.config.static_answers:
+            response = self.config.static_answers[command]
             await message.channel.send(response)
             return
 
@@ -111,16 +120,18 @@ class Client(discord.Client):
         elif command == "help":
             embed = discord.Embed(title="Ape mother - Help", color=0x26C0EB)
 
-            commands_md_joined = " / ".join([f"`{c}`" for c in config.main_commands])
+            commands_md_joined = " / ".join(
+                [f"`{c}`" for c in self.config.main_commands]
+            )
             embed.add_field(
                 name="How to invoke the Mother ape?",
                 value=f"Use one of the following commands: {commands_md_joined} followed by a proper trigger and parameters",
                 inline=True,
             )
 
-            for command, command_dict in config.commands.items():
+            for command, command_dict in self.config.commands.items():
                 commands_starts = [
-                    k for k, v in config.commands_starts.items() if v == command
+                    k for k, v in self.config.commands_starts.items() if v == command
                 ]
 
                 value = command_dict["description"]
@@ -240,6 +251,5 @@ def get_intents():
     return intents
 
 
-config = Config()
 client = Client(intents=get_intents())
-client.run(config.discord_bot_token)
+client.run(client.config.discord_bot_token)
