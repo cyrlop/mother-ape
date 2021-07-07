@@ -85,6 +85,12 @@ class Client(discord.Client):
                 await member.edit(
                     nick=f"{last_price}$ - {self.config.initial_names[guild]}"
                 )
+                await self.change_presence(
+                    activity=discord.Activity(
+                        type=discord.ActivityType.watching,
+                        name=f"$GME: {last_price}$",
+                    )
+                )
             await asyncio.sleep(sec)
 
     async def on_message(self, message):
