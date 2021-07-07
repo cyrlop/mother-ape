@@ -1,5 +1,7 @@
 import os
 import discord
+import asyncio
+
 
 import stock_utils
 import reddit_utils
@@ -60,7 +62,21 @@ class Config:
 
 class Client(discord.Client):
     async def on_ready(self):
+        # Store initial bot nickname for each guild
+        config.initial_names = {
+            guild: guild.get_member(self.user.id).display_name for guild in self.guilds
+        }
+        self.loop.create_task(self.update_gme_ticker(sec=10))
         print(f"Discord client started and logged on as {self.user}!")
+
+    async def update_gme_ticker(self, sec):
+        while True:
+            ticker = stock_utils.get_ticker("GME")
+            last_price = stock_utils.get_last_price(ticker)
+            for guild in self.guilds:
+                member = guild.get_member(self.user.id)
+                await member.edit(nick=f"{last_price}$ - {config.initial_names[guild]}")
+            await asyncio.sleep(sec)
 
     async def on_message(self, message):
         # Don't respond to her own messages
