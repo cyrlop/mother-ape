@@ -60,10 +60,13 @@ class Config:
 
     def set_initial_names(self, client):
         # Store initial bot nickname for each guild
-        self.initial_names = {
-            guild: guild.get_member(client.user.id).display_name
-            for guild in client.guilds
-        }
+        self.initial_names = {}
+
+        for guild in client.guilds:
+            initial_name = guild.get_member(client.user.id).display_name
+            if "$ - " in initial_name:
+                initial_name = initial_name.split("$ - ")[1]
+            self.initial_names[guild] = initial_name
 
 
 class Client(discord.Client):
