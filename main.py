@@ -83,17 +83,25 @@ class Client(discord.Client):
 
     async def update_gme_ticker(self, sec):
         while True:
-            ticker = stock_utils.get_ticker("GME")
-            last_price = stock_utils.get_last_price(ticker)
+            try:
+                ticker = stock_utils.get_ticker("GME")
+                last_price = stock_utils.get_last_price(ticker)
+                success = True
+            except:
+                success = False
+
             for guild in self.guilds:
                 member = guild.get_member(self.user.id)
-                await member.edit(
-                    nick=f"{last_price}$ - {self.config.initial_names[guild]}"
-                )
+                if success:
+                    nick = f"{last_price}$ - {self.config.initial_names[guild]}"
+                    act = f"$GME: {last_price}$"
+                else:
+                    nick = self.config.initial_names[guild]
+                    act = "Error fetching price"
+                await member.edit(nick=nick)
                 await self.change_presence(
                     activity=discord.Activity(
-                        type=discord.ActivityType.watching,
-                        name=f"$GME: {last_price}$",
+                        type=discord.ActivityType.watching, name=act
                     )
                 )
             await asyncio.sleep(sec)
@@ -264,7 +272,7 @@ def get_intents():
 
 def main(delay):
     client = Client(intents=get_intents(), delay=delay)
-client.run(client.config.discord_bot_token)
+    client.run(client.config.discord_bot_token)
 
 
 if __name__ == "__main__":
