@@ -1,3 +1,4 @@
+import argparse
 import os
 import discord
 import asyncio
@@ -70,13 +71,14 @@ class Config:
 
 
 class Client(discord.Client):
-    def __init__(self, *args, **kw):
+    def __init__(self, delay=20, *args, **kw):
         super().__init__(*args, **kw)
         self.config = Config()
+        self.delay = delay
 
     async def on_ready(self):
         self.config.set_initial_names(self)
-        self.loop.create_task(self.update_gme_ticker(sec=10))
+        self.loop.create_task(self.update_gme_ticker(sec=self.delay))
         print(f"Discord client started and logged on as {self.user}!")
 
     async def update_gme_ticker(self, sec):
@@ -260,5 +262,21 @@ def get_intents():
     return intents
 
 
-client = Client(intents=get_intents())
+def main(delay):
+    client = Client(intents=get_intents(), delay=delay)
 client.run(client.config.discord_bot_token)
+
+
+if __name__ == "__main__":
+    parser = argparse.ArgumentParser(description="Ape bot for discord.")
+    parser.add_argument(
+        "--delay",
+        "-d",
+        type=int,
+        help="Ticker refresh interval (in sec)",
+        default=20,
+    )
+
+    args = parser.parse_args()
+
+    main(**vars(args))

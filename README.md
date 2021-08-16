@@ -8,7 +8,7 @@ This is a playground bot for discord.
 - Install requirements from `requirements.txt`
 - Set your environment variables
     - `DISCORD_BOT_TOKEN`
-- Run `python main.py`
+- Run `python main.py -d 20`
 
 
 # Usage
