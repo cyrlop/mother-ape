@@ -28,6 +28,13 @@ class Config:
                 "Hey Mother, gimme GME dayLow dayHigh",
             ],
         },
+        "watch": {
+            "description": ("Updates bot activity text to the given ticker."),
+            "usage": "Hey Mother, watch <TICKER>",
+            "examples": [
+                "Hey Mother, watch LRC",
+            ],
+        },
         "in_moass": {
             "description": "Ask Mother ape if we are in the MOASS.",
             "usage": "Hey Mother, are we in the MOASS?",
@@ -48,6 +55,7 @@ class Config:
     commands_starts = {
         "help": "help",
         "gimme": "gimme",
+        "watch": "watch",
         "in_moass": "in_moass",
         "are we in the moass": "in_moass",
         "is the moass happening now": "in_moass",
@@ -58,6 +66,10 @@ class Config:
     }
 
     static_answers = {None: "Ook, ook ook."}
+
+    # For ticker prices in bot nickname and activity
+    presence_ticker = "GME"
+    presence_watch = "GME"
 
     def set_initial_names(self, client):
         # Store initial bot nickname for each guild
@@ -78,35 +90,56 @@ class Client(discord.Client):
 
     async def on_ready(self):
         self.config.set_initial_names(self)
-        self.loop.create_task(self.update_gme_ticker(sec=self.delay))
+        self.loop.create_task(self.update_presence_ticker(sec=self.delay))
         print(f"Discord client started and logged on as {self.user}!")
 
-    async def update_gme_ticker(self, sec):
+    async def update_presence_ticker(self, sec):
         while True:
+            # 1. Get prices
             try:
-                ticker = stock_utils.get_ticker("GME")
+                ticker = stock_utils.get_ticker(self.config.presence_ticker)
                 last_price = stock_utils.get_last_price(ticker)
                 success = True
             except:
                 success = False
 
+            try:
+                if self.config.presence_watch != self.config.presence_ticker:
+                    ticker_watch = stock_utils.get_ticker(self.config.presence_watch)
+                    last_price_watch = stock_utils.get_last_price(ticker_watch)
+                else:
+                    last_price_watch = last_price
+                success_watch = True
+            except:
+                success_watch = False
+
+            # 2. Update bot nickname and presence status
             for guild in self.guilds:
                 member = guild.get_member(self.user.id)
                 if success:
                     nick = f"{last_price}$ - {self.config.initial_names[guild]}"
-                    act = f"$GME: {last_price}$"
                 else:
                     nick = self.config.initial_names[guild]
-                    act = "Error fetching price"
+
+                if success_watch:
+                    act = f"${self.config.presence_watch}: {last_price_watch}$"
+                else:
+                    act = "Error fetching prices"
+
                 try:
                     await member.edit(nick=nick)
+                except Exception as e:
+                    print(f"Failed to update nick: {e}")
+
+                try:
                     await self.change_presence(
                         activity=discord.Activity(
                             type=discord.ActivityType.watching, name=act
                         )
                     )
                 except Exception as e:
-                    print(f"Failed to update nick or status: {e}")
+                    print(f"Failed to update presence status: {e}")
+
             await asyncio.sleep(sec)
 
     async def on_message(self, message):
@@ -216,6 +249,12 @@ class Client(discord.Client):
                     )
 
             await message.channel.send(embed=embed)
+            return
+
+        # COMMAND: watch
+        elif command == "watch":
+            self.config.presence_watch = text_rest
+            await message.channel.send(f"Mum is now watching `{text_rest}`")
             return
 
         # COMMAND: in_moass
