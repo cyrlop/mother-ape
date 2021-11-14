@@ -98,12 +98,15 @@ class Client(discord.Client):
                 else:
                     nick = self.config.initial_names[guild]
                     act = "Error fetching price"
-                await member.edit(nick=nick)
-                await self.change_presence(
-                    activity=discord.Activity(
-                        type=discord.ActivityType.watching, name=act
+                try:
+                    await member.edit(nick=nick)
+                    await self.change_presence(
+                        activity=discord.Activity(
+                            type=discord.ActivityType.watching, name=act
+                        )
                     )
-                )
+                except Exception as e:
+                    print(f"Failed to update nick or status: {e}")
             await asyncio.sleep(sec)
 
     async def on_message(self, message):
